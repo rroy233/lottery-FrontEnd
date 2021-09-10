@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <link href="/static/favicon.ico" type="image/x-icon" rel="shortcut icon">
+  <meta charset='utf-8'>
+  <title>仪表盘 | 管理员</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+  <v-app id="inspire">
+    <v-app-bar
+            app
+            color="white"
+            flat
+    >
+      <v-container class="py-0 fill-height">
+        <v-avatar
+                class="mr-10"
+                color="grey darken-1"
+                size="32"
+        ></v-avatar>
+
+        <v-btn
+                v-for="link in navi_top"
+                :key="link.name"
+                text
+                :href="link.link"
+        >
+          {{ link.name }}
+        </v-btn>
+
+        <v-spacer></v-spacer>
+
+        <v-btn depressed @click="logout()">
+          登出
+        </v-btn>
+      </v-container>
+    </v-app-bar>
+
+    <v-main class="grey lighten-3">
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-sheet
+                    min-height="70vh"
+                    rounded="lg"
+            >
+              <!--正文-->
+              <v-container>
+
+                <v-row
+                        class="mb-6"
+                        no-gutters
+                >
+                  <v-col
+                          :md="6"
+                  >
+                    <v-card
+                            class="pa-2"
+                            outlined
+                            tile
+                    >
+                      <v-row class="mb-6">
+                        <v-col>
+                          <v-progress-circular
+                                  :rotate="-90"
+                                  :size="100"
+                                  :width="15"
+                                  :value="value"
+                                  color="primary"
+                          >
+                            {{ value }}
+                          </v-progress-circular>
+                        </v-col>
+
+                        <v-col>
+                          在线人数:
+                          <code>{{this.act_realtime_data.online}}</code>
+                          <br>
+                          已参与人数:
+                          <code>{{this.act_realtime_data.got}}</code>
+                          <br><br>
+
+                          <div
+                                  v-for="(item, i) in gifts"
+                                  :key="i"
+                          >
+                            {{item.name}}中奖人数:
+                            <code>{{item.got}}</code>
+                            <br>
+                          </div>
+                        </v-col>
+                      </v-row>
+
+                    </v-card>
+                  </v-col>
+                  <v-col
+                          :md="6"
+                  >
+                    <v-card
+                            class="pa-2"
+                            outlined
+                            tile
+                    >
+                      奖品信息
+                      <v-list>
+
+                        <v-list-item
+                                v-for="(item, i) in gifts"
+                                :key="i"
+                        >
+                          <v-list-item-title>
+                            {{item.name}} 共 {{item.total}} 名
+                          </v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-card>
+                  </v-col>
+                </v-row>
+
+                <v-row class="mb-12">
+                  <v-col>
+                    <v-card
+                            class="pa-2"
+                            outlined
+                            tile>
+
+                      <v-list dense>
+                        <v-subheader>实时中奖名单（更新时间:{{update_time}}，每3秒刷新一次）</v-subheader>
+                        <v-list-item-group
+                                color="primary"
+                        >
+                          <v-list-item
+                                  v-for="(item, i) in lucky_list"
+                                  :key="i"
+                          >
+                            <v-list-item-icon>
+                              <v-icon v-text="item.id"></v-icon>
+                            </v-list-item-icon>
+                            <v-list-item-content>
+                              <v-list-item-title v-text="item.name"></v-list-item-title>
+                            </v-list-item-content>
+                            <v-list-item-content>
+                              <v-list-item-title>中了
+                                <code>{{item.gift_name}}</code>
+                              </v-list-item-title>
+                            </v-list-item-content>
+                          </v-list-item>
+                        </v-list-item-group>
+                      </v-list>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </v-container>
+
+
+              <!--正文-->
+            </v-sheet>
+          </v-col>
+
+          <v-col cols="2">
+            <v-sheet rounded="lg">
+              <v-list color="transparent">
+                <v-list-item
+
+                >
+
+                  <v-list-item-content>
+                    <v-list-item-title>
+                      活动名称:
+                      <code>{{ act_info.act_name}}</code>
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+
+                <v-list-item
+
+                >
+
+                  <v-list-item-content>
+                    <v-list-item-title>
+                      当前状态:
+                      <code>{{ act_info.act_status ? "开启中" : "已关闭"}}</code>
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-divider class="my-2"></v-divider>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                        @click="openorclose()"
+                >
+                  <v-list-item-content>
+
+                    <v-list-item-title>
+                      <v-icon>
+
+                        {{ act_info.act_status ? "mdi-close" : "mdi-check"}}
+                      </v-icon>&nbsp;{{ act_info.act_status ? "关闭抽奖" : "开启抽奖"}}
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                        @click="getRealTimeData()"
+                >
+                  <v-list-item-content>
+
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-refresh
+                      </v-icon>&nbsp;刷新数据
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                        @click="beginWatch()"
+                >
+                  <v-list-item-content>
+
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-{{ watcher ? "eye-off" : "eye"}}
+                      </v-icon>&nbsp;{{ watcher ? "关闭轮询" : "开启轮询"}}
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                        @click="showQrcode('login')"
+                >
+                  <v-list-item-content>
+
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-code-tags
+                      </v-icon>&nbsp;登录二维码
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                        @click="showQrcode('register')"
+                >
+                  <v-list-item-content>
+
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-code-tags
+                      </v-icon>&nbsp;注册二维码
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+              </v-list>
+            </v-sheet>
+          </v-col>
+
+        </v-row>
+      </v-container>
+
+
+      <v-dialog v-model="tips.open" max-width="500px">
+        <v-card>
+          <v-card-title>{{tips.info}}</v-card-title>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="tips.open = false" right>OK</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+
+      <v-dialog v-model="confirmTip" max-width="500px">
+        <v-card>
+          <v-card-title>建议清空现有抽奖记录后再开启新一轮抽奖活动
+            <br>活动开启后，用户的增/改功能将关闭</v-card-title>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="confirmTip=!confirmTip">取消</v-btn>
+            <v-btn color="blue darken-1" text @click="changeStatus()">OK</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+
+      <v-dialog
+              transition="dialog-bottom-transition"
+              max-width="600"
+              v-model="qrcode.dialog"
+      >
+        <v-card>
+          <v-toolbar
+                  :color="qrcode.color"
+                  dark
+          >用户请扫描此二维码进行{{qrcode.type}}</v-toolbar>
+          <v-img
+                  max-width="400"
+                  :src="qrcode.picUrl"
+                  class="ma-auto mt-3"
+          >
+            <template v-slot:placeholder>
+              <v-row
+                      class="fill-height ma-0"
+                      align="center"
+                      justify="center"
+              >
+                <v-progress-circular
+                        indeterminate
+                        color="grey lighten-5"
+                ></v-progress-circular>
+              </v-row>
+            </template>
+          </v-img>
+          <div class="text-caption text-center" >{{qrcode.loginUrl}}</div>
+          <div class="text-caption text-center" >二维码2分钟之内有效</div>
+          <v-card-actions class="justify-end">
+            <v-btn
+                    text
+                    @click="qrcode.dialog = false"
+            >关闭</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </v-main>
+  </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script>
+  const backEndUrl = "{{api_url}}";
+  new Vue({
+    el: '#app',
+    vuetify: new Vuetify(),
+    data:()=>({
+      navi_top: [
+        {name:'仪表盘',link:"/admin/"},
+        {name:'中奖信息',link:"/admin/lottery"},
+        {name:'奖品管理',link:"/admin/gifts"},
+        {name:'用户管理',link:"/admin/user"},
+        {name:'设置',link:"/admin/setting"},
+      ],
+      value:0,
+      act_info:{
+        act_status:0,
+        act_name:"loading...",
+        act_gift:[],
+        act_open_type:0,
+        act_open_time:"",
+        act_end_time:"",
+      },
+      tips: {
+        open:false,
+        info:"",
+      },
+      lucky_list:[],
+      act_realtime_data:{
+        got:0,
+        total:0,
+        online:0,
+      },
+      gifts:[],
+      timer:null,
+      watcher:false,
+      confirmTip:false,
+      qrcode:{dialog:false,picUrl:"",loginUrl:"",type:"",color:"blue lighten-3"},
+      update_time:"NA",
+    }),
+    mounted: function (){
+      var that = this
+      auth = Cookies.get('token');
+
+      this.getActData()
+    },
+    methods:{
+      beginWatch: function (){
+        var that = this
+        if (this.watcher){
+          that.watcher = false
+          clearInterval(that.timer)
+        }else{
+          this.watcher = true
+          this.getRealTimeData()
+          this.timer = setInterval(function(){
+            //定时器
+            that.getRealTimeData()
+          }, 3000);
+        }
+      },
+      getRealTimeData: function (){
+        //获取实时数据
+        axios.get(backEndUrl+'/admin/index/check',{
+          timeout: 5000,
+          headers:{'Authorization':auth,},
+        }).then((res) => {
+          if (res.data.status == 0) {
+            var data = JSON.parse(res.data.data)
+            this.act_info.act_status = data.act_status
+            this.act_realtime_data = data.act_realtime_data
+            this.lucky_list = data.lucky_list
+            this.gifts = data.gifts
+            this.value = Math.round(100*this.act_realtime_data.got/this.act_realtime_data.total)
+            this.update_time = data.time
+          }else{
+            this.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("服务器连接失败("+err+")");
+        });
+      },
+      getActData: function (){
+        //获取活动信息
+        axios.get(backEndUrl+'/admin/index/act_info',{
+          timeout: 5000,
+          headers:{'Authorization':auth,},
+        }).then((res) => {
+          if (res.data.status == 0) {
+            this.act_info = JSON.parse(res.data.data)
+          }else{
+            this.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("服务器连接失败("+err+")");
+        });
+      },
+      showtips: function (text){
+        this.tips.info = text
+        this.tips.open = true
+      },
+      openorclose: function (){
+        if (this.act_info.act_status == 1){
+          this.changeStatus()
+        }else{
+          this.confirmTip = true
+        }
+      },
+      changeStatus: function (){
+        this.beginWatch()
+        var api = ""
+        if (this.act_info.act_status == 1){
+          api = "/admin/act/close"
+        }else{
+          this.confirmTip = false
+          api = "/admin/act/open"
+        }
+        axios({
+          url:backEndUrl+api,
+          method:"post",
+          headers:{
+            'Authorization':auth,
+          }
+        }).then((res) => {
+          this.showtips(res.data.msg)
+          this.getActData()
+        }).catch(err => {
+          this.showtips("系统异常:"+err)
+        });
+      },
+      showQrcode(actionType){
+        this.qrcode.dialog = true
+        axios({
+          url:backEndUrl+"/auth/ticket",
+          method:"post",
+          data:{
+            "actionType":actionType,
+          }
+        }).then((res) => {
+          if(res.data.status == 0){
+            this.qrcode.type = JSON.parse(res.data.data).type
+            this.qrcode.picUrl = JSON.parse(res.data.data).url
+            this.qrcode.loginUrl = JSON.parse(res.data.data).redirect_url
+            if (this.qrcode.type == "注册"){
+              this.qrcode.color = "pink darken-2"
+            }else{
+              this.qrcode.color = "red darken-2"
+            }
+          }else{
+            this.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("系统异常:"+err)
+        });
+      },
+      logout: function (){
+        axios({
+          url:backEndUrl+"/auth/logout",
+          method:"post",
+        }).then((res) => {
+          if(res.data.status == 0){
+            this.showtips("登出成功")
+            setInterval(function () {
+              window.location.href = "/admin/";
+            },1000)
+          }else{
+            this.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("系统异常:"+err)
+        });
+      }
+    },
+  })
+</script>
+</body>
+</html>

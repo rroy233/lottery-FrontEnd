@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta charset='utf-8'>
+  <title>奖品管理 | 管理员</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+  <v-app id="inspire">
+    <v-app-bar
+            app
+            color="white"
+            flat
+    >
+      <v-container class="py-0 fill-height">
+        <v-avatar
+                class="mr-10"
+                color="grey darken-1"
+                size="32"
+        ></v-avatar>
+
+        <v-btn
+                v-for="link in navi_top"
+                :key="link.name"
+                text
+                :href="link.link"
+        >
+          {{ link.name }}
+        </v-btn>
+
+        <v-spacer></v-spacer>
+      </v-container>
+    </v-app-bar>
+
+    <v-main class="grey lighten-3">
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-sheet
+                    min-height="70vh"
+                    rounded="lg"
+            >
+              <!--正文-->
+              <v-container>
+
+                <v-card>
+                  <v-card-title>
+                    <v-text-field
+                            v-model="search"
+                            append-icon="mdi-magnify"
+                            label="Search"
+                            single-line
+                            hide-details
+                    ></v-text-field>
+                  </v-card-title>
+
+                  <v-data-table
+                          :headers="tbHeaders"
+                          :items="Gifts"
+                          sort-by="calories"
+                          class="elevation-1"
+                          :search="search"
+                  >
+
+                    <template v-slot:top>
+
+                      <v-toolbar
+                              flat
+                      >
+                        <v-toolbar-title>奖品管理</v-toolbar-title>
+                        <v-divider
+                                class="mx-4"
+                                inset
+                                vertical
+                        ></v-divider>
+                        <v-spacer></v-spacer>
+
+                        <v-dialog
+                                v-model="dialog"
+                                max-width="500px"
+                        >
+                          <template v-slot:activator="{ on, attrs }">
+                            <v-btn
+                                    color="primary"
+                                    dark
+                                    class="mb-2"
+                                    v-bind="attrs"
+                                    v-on="on"
+                            >
+                              新增奖品
+                            </v-btn>
+                          </template>
+                          <v-card>
+                            <v-card-title>
+                              <span class="text-h5">{{ formTitle }}</span>
+                            </v-card-title>
+
+                            <v-card-text>
+                              <v-container>
+                                <v-row>
+
+                                  <v-col
+                                          cols="12"
+                                          sm="6"
+                                          md="4"
+                                  >
+                                    <v-text-field
+                                            v-model="editedItem.name"
+                                            label="奖品名称"
+                                    ></v-text-field>
+                                  </v-col>
+
+                                  <v-col
+                                          cols="12"
+                                          sm="6"
+                                          md="4"
+                                  >
+                                    <v-text-field
+                                            v-model="editedItem.total"
+                                            label="总数"
+                                    ></v-text-field>
+                                  </v-col>
+
+                                </v-row>
+                              </v-container>
+                            </v-card-text>
+
+                            <v-card-actions>
+                              <v-spacer></v-spacer>
+                              <v-btn
+                                      color="blue darken-1"
+                                      text
+                                      @click="close"
+                              >
+                                取消
+                              </v-btn>
+                              <v-btn
+                                      color="blue darken-1"
+                                      text
+                                      @click="save"
+                              >
+                                保存
+                              </v-btn>
+                            </v-card-actions>
+
+
+                          </v-card>
+                        </v-dialog>
+
+                        <v-dialog v-model="dialogDelete" max-width="500px">
+                          <v-card>
+                            <v-card-title class="text-h5">确定要删除该奖品?</v-card-title>
+                            <v-card-actions>
+                              <v-spacer></v-spacer>
+                              <v-btn color="blue darken-1" text @click="closeDelete">取消</v-btn>
+                              <v-btn color="blue darken-1" text @click="deleteItemConfirm">OK</v-btn>
+                            </v-card-actions>
+                          </v-card>
+                        </v-dialog>
+
+
+                        <v-dialog v-model="tips.open" max-width="500px">
+                          <v-card>
+                            <v-card-title>{{tips.info}}</v-card-title>
+                            <v-card-actions>
+                              <v-spacer></v-spacer>
+                              <v-btn color="blue darken-1" text @click="tips.open = false" right>OK</v-btn>
+                            </v-card-actions>
+                          </v-card>
+                        </v-dialog>
+
+
+                      </v-toolbar>
+                    </template>
+
+
+
+                    <template v-slot:item.actions="{ item }">
+                      <v-icon
+                              small
+                              class="mr-2"
+                              @click="editItem(item)"
+                      >
+                        mdi-pencil
+                      </v-icon>
+                      <v-icon
+                              small
+                              @click="deleteItem(item)"
+                      >
+                        mdi-delete
+                      </v-icon>
+                    </template>
+
+                  </v-data-table>
+
+                </v-card>
+
+
+              </v-container>
+
+
+              <!--正文-->
+            </v-sheet>
+          </v-col>
+
+          <v-col cols="2">
+            <v-sheet rounded="lg">
+              <v-list color="transparent">
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                >
+                  <v-list-item-content @click="recache()">
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-account
+                      </v-icon>&nbsp;更新缓存
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+
+
+
+              </v-list>
+            </v-sheet>
+          </v-col>
+
+        </v-row>
+      </v-container>
+    </v-main>
+  </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script>
+  const backEndUrl = "{{api_url}}";
+  new Vue({
+    el: '#app',
+    vuetify: new Vuetify(),
+    data:()=>({
+      navi_top: [
+        {name:'仪表盘',link:"/admin/"},
+        {name:'中奖信息',link:"/admin/lottery"},
+        {name:'奖品管理',link:"/admin/gifts"},
+        {name:'用户管理',link:"/admin/user"},
+        {name:'设置',link:"/admin/setting"},
+      ],
+      search: '',
+      tbHeaders: [
+        { text: '奖品id', value: 'id' },
+        { text: '奖品名称', value: 'name' },
+        { text: '奖品总数', value: 'total' },
+        { text: '已获得', value: 'got' },
+        { text: '内定数量', value: 'promise' },
+        { text: '操作', value: 'actions', sortable: false },
+      ],
+      count:0,
+      Gifts:[],
+      editedItem:{id:0,name:"",total:null},
+      editedIndex: -1,
+      dialog: false,
+      dialogDelete: false,
+      tips: {
+        open:false,
+        info:"",
+      }
+    }),
+    mounted:function (){
+      auth = Cookies.get('user');
+
+      this.initdata()
+    },
+    computed: {
+      cols () {
+        const { lg, sm } = this.$vuetify.breakpoint
+        return lg ? [3, 9] : sm ? [9, 3] : [6, 6]
+      },
+      formTitle () {
+        return this.editedIndex === -1 ? '新增奖品' : '编辑奖品'
+      },
+    },
+    watch: {
+      dialog (val) {
+        val || this.close()
+      },
+      dialogDelete (val) {
+        val || this.closeDelete()
+      },
+    },
+    methods:{
+      initdata: function (){
+        var that=this;
+        //获取所有奖品信息
+        axios.get(backEndUrl+'/admin/gifts/all',{
+          timeout: 5000,
+          headers:{'Authorization':auth,},
+        }).then((res) => {
+          var data = JSON.parse(res.data.data)
+          if (res.data.status == 0) {
+            that.Gifts = JSON.parse(data.gifts)
+            that.count = data.count
+          }else{
+            that.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("获取所有奖品信息失败("+err+")");
+        });
+      },
+      recache: function (){
+        this.showtips("请等待10s，待后端更新缓存")
+      },
+      editItem (item) {
+        this.editedIndex = this.Gifts.indexOf(item)
+        this.editedItem = Object.assign({}, item)
+        //获取该用户的信息
+        axios.get(backEndUrl+'/admin/gifts/get',{
+          timeout: 5000,
+          headers:{'Authorization':auth,},
+          params: {
+            id: String(item.id)
+          }
+        }).then((res) => {
+          if (res.data.status == 0) {
+            this.editedItem = Object.assign({}, JSON.parse(res.data.data))
+          }else{
+            that.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("服务器连接失败("+err+")");
+        });
+        this.dialog = true
+      },
+      deleteItem (item) {
+        this.editedIndex = this.Gifts.indexOf(item)
+        this.editedItem = Object.assign({}, item)
+        this.dialogDelete = true
+      },
+
+      deleteItemConfirm () {
+        var this_user = this.Gifts[this.editedIndex]
+
+        axios({
+          url:backEndUrl+"/admin/gifts/del",
+          method:"post",
+          data:{
+            id:String(this_user.id)
+          }
+        }).then((res) => {
+          if (res.data.status == 0) {
+            this.showtips("删除成功")
+            this.initdata()
+          }else{
+            this.showtips( res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("系统异常:"+res.data.msg)
+        });
+        this.closeDelete()
+      },
+
+
+      close () {
+        this.dialog = false
+        this.$nextTick(() => {
+          this.editedItem = Object.assign({}, this.defaultItem)
+          this.editedIndex = -1
+        })
+      },
+
+      closeDelete () {
+        this.dialogDelete = false
+        this.$nextTick(() => {
+          this.editedItem = Object.assign({}, this.defaultItem)
+          this.editedIndex = -1
+        })
+      },
+      showtips: function (text){
+        this.tips.info = text
+        this.tips.open = true
+      },
+      save () {
+        var this_gift = this.Gifts[this.editedIndex]
+        console.log(this.editedIndex)
+        if (this.editedIndex > -1) {
+          //编辑
+          axios({
+            url:backEndUrl+"/admin/gifts/edit",
+            method:"post",
+            data:{
+              id:String(this_gift.id),
+              name:this.editedItem.name,
+              total:String(this.editedItem.total),
+            }
+          }).then((res) => {
+            if (res.data.status == 0) {
+              this.tips.info = res.data.msg
+              this.tips.open = true
+              this.initdata()
+            }else{
+              this.tips.info = "更新失败:"+res.data.msg
+              this.tips.open = true
+            }
+          }).catch(err => {
+            this.tips.info = "系统异常:"+res.data.msg
+            this.tips.open = true
+          });
+        }else{
+          //新增
+          axios({
+            url:backEndUrl+"/admin/gifts/add",
+            method:"post",
+            data:{
+              name:this.editedItem.name,
+              total:String(this.editedItem.total),
+            }
+          }).then((res) => {
+            if (res.data.status == 0) {
+              this.showtips("添加成功")
+              this.initdata()
+            }else{
+              this.showtips("添加失败:"+res.data.msg)
+            }
+          }).catch(err => {
+            this.tips.info = "系统异常:"+res.data.msg
+            this.tips.open = true
+          });
+
+        }
+
+
+        this.close();
+      },
+    }
+  })
+</script>
+</body>
+</html>

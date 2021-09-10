@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta charset='utf-8'>
+  <title>中奖信息 | 管理员</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+  <v-app id="inspire">
+    <v-app-bar
+            app
+            color="white"
+            flat
+    >
+      <v-container class="py-0 fill-height">
+        <v-avatar
+                class="mr-10"
+                color="grey darken-1"
+                size="32"
+        ></v-avatar>
+
+        <v-btn
+                v-for="link in navi_top"
+                :key="link.name"
+                text
+                :href="link.link"
+        >
+          {{ link.name }}
+        </v-btn>
+
+        <v-spacer></v-spacer>
+      </v-container>
+    </v-app-bar>
+
+    <v-main class="grey lighten-3">
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-sheet
+                    min-height="70vh"
+                    rounded="lg"
+            >
+              <!--正文-->
+              <v-container>
+
+                <v-alert
+                        border="top"
+                        colored-border
+                        type="info"
+                        elevation="2"
+                >
+                  无法查询正在进行的抽奖活动的中奖结果。活动结束后才会自动同步进入数据库。
+                </v-alert>
+
+                <v-card>
+                  <v-card-title>
+                    <v-text-field
+                            v-model="search"
+                            append-icon="mdi-magnify"
+                            label="Search"
+                            single-line
+                            hide-details
+                    ></v-text-field>
+                  </v-card-title>
+                  <v-data-table
+                          :headers="tbHeaders"
+                          :items="lucky_list"
+                          :search="search"
+                  ></v-data-table>
+                </v-card>
+
+
+              </v-container>
+
+
+              <!--正文-->
+            </v-sheet>
+          </v-col>
+
+          <v-col cols="2">
+            <v-sheet rounded="lg">
+              <v-list color="transparent">
+                <v-list-item
+
+                >
+                  <v-list-item-content>
+                    <v-list-item-title>
+                      中奖信息数量:
+                      <code>{{count}}</code>
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-divider class="my-2"></v-divider>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                >
+                  <v-list-item-content @click="dialogDelete = true">
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-delete
+                      </v-icon>&nbsp;清空
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                >
+                  <v-list-item-content @click="refresh()">
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-refresh
+                      </v-icon>&nbsp;刷新
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item
+                        link
+                        color="grey lighten-4"
+                >
+                  <v-list-item-content @click="export_log()">
+                    <v-list-item-title>
+                      <v-icon>
+                        mdi-export-variant
+                      </v-icon>&nbsp;导出
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+
+              </v-list>
+            </v-sheet>
+          </v-col>
+
+        </v-row>
+
+        <v-dialog v-model="tips.open" max-width="500px">
+          <v-card>
+            <v-card-title>{{tips.info}}</v-card-title>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="tips.open = false" right>OK</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="dialogDelete" max-width="500px">
+          <v-card>
+            <v-card-title>确定要删除所有记录?</v-card-title>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="dialogDelete = false">手滑了</v-btn>
+              <v-btn color="blue darken-1" text @click="reset()">是的</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="dialogDownload" max-width="500px">
+          <v-card>
+            <v-card-title>文件下载</v-card-title>
+            <v-card-text>
+              <v-btn :href="export_url">下载文件</v-btn>
+              下载链接有效期为:1分钟
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="dialogDownload = false">关闭</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+      </v-container>
+    </v-main>
+  </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script>
+
+  const backEndUrl = "{{api_url}}";
+  new Vue({
+    el: '#app',
+    vuetify: new Vuetify(),
+    data:()=>({
+      navi_top: [
+        {name:'仪表盘',link:"/admin/"},
+        {name:'中奖信息',link:"/admin/lottery"},
+        {name:'奖品管理',link:"/admin/gifts"},
+        {name:'用户管理',link:"/admin/user"},
+        {name:'设置',link:"/admin/setting"},
+      ],
+      value:30,
+      search: '',
+      tbHeaders: [
+        {
+          text: 'ID',
+          align: 'start',
+          value: 'Id',
+        },
+        { text: '用户id', value: 'Uid' },
+        { text: '姓名', value: 'Name' },
+        { text: '奖品id', value: 'GiftId' },
+        { text: '奖项', value: 'GiftName' },
+        { text: '获取时间', value: 'GotTime'},
+      ],
+      lucky_list:[],
+      count:0,
+      tips: {
+        open:false,
+        info:"",
+      },
+      dialogDelete:false,
+      dialogDownload:false,
+      export_url:"",
+    }),
+    mounted:function (){
+      this.initdata()
+    },
+    methods:{
+      reset: function (){
+        var that = this;
+        this.dialogDelete = false
+        axios({
+          url:backEndUrl+"/admin/act/reset",
+          method:"post",
+        }).then((res) => {
+          if (res.data.status == 0) {
+            that.showtips(res.data.msg)
+            this.initdata()
+          }else{
+            that.showtips( "删除失败:"+res.data.msg)
+          }
+        }).catch(err => {
+          that.showtips( "系统异常:"+err)
+        });
+
+      },
+      initdata: function (){
+        var that = this;
+        //获取所有用户信息
+        axios.get(backEndUrl+'/admin/act/lucky_list',{
+          timeout: 5000,
+        }).then((res) => {
+          var data = JSON.parse(res.data.data)
+          if (res.data.status == 0) {
+            that.lucky_list = JSON.parse(data.data)
+            that.count = data.count
+          }else{
+            that.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips("获取所有中奖信息失败("+err+")");
+        });
+      },
+      refresh: function (){
+        this.initdata()
+        this.showtips("已刷新")
+      },
+      export_log(){
+        axios({
+          url:backEndUrl+"/admin/act/lucky_list/export",
+          method:"post",
+        }).then((res) => {
+          if (res.data.status == 0) {
+            this.export_url = JSON.parse(res.data.data).url
+            this.dialogDownload = true
+          }else{
+            this.showtips(res.data.msg)
+          }
+        }).catch(err => {
+          this.showtips(err)
+        });
+
+      },
+      showtips: function (text){
+        this.tips.info = text
+        this.tips.open = true
+      },
+    }
+  })
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0,maximum-scale=1.0, user-scalable=no'/>
+  <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'/>
+  <meta name='renderer' content='webkit'>
+  <meta name='format-detection' content='telephone=no'>
+  <meta http-equiv='Cache-Control' content='no-siteapp'/>
+  <link href="/static/favicon.ico" type="image/x-icon" rel="shortcut icon">
+  <title>登录 | 抽奖系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+  <v-app id="inspire">
+    <v-app-bar app>
+      <v-toolbar-title>登录</v-toolbar-title>
+      <v-snackbar
+              timeout=3000
+              max-height="48px"
+              v-model="config.alert"
+              :color="config.alert_type"
+              transition="slide-x-reverse-transition"
+              absolute
+              top
+              outlined
+              right
+      >
+        {{ config.alert_text }}
+      </v-snackbar>
+    </v-app-bar>
+
+    <v-main>
+      <!--  -->
+      <v-container>
+                <v-form
+                ref="form"
+                lazy-validation
+        >
+
+                  <br><br><br><br>
+
+          <v-text-field
+                  v-model="name"
+                  :disabled="disable_input"
+                  label="姓名"
+          ></v-text-field>
+          <v-text-field
+                  v-model="phonenumber"
+                  :disabled="disable_input"
+                  label="手机号"
+          ></v-text-field>
+
+          <v-btn
+                  block
+                  :loading="loading"
+                  :disabled="disable_input"
+                  @click="submit()"
+                  @keyup.enter.native="submit"
+                  outlined
+                  color="indigo"
+          >
+            登录
+            <template v-slot:loader>
+              <span>加载中</span>
+            </template>
+          </v-btn>
+        </v-form>
+      </v-container>
+
+    </v-main>
+
+  </v-app>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script>
+
+  const backEndUrl = "{{api_url}}";
+  new Vue({
+    el: '#app',
+    vuetify: new Vuetify(),
+    data:{
+      name:"",
+      phonenumber:"",
+      disable_input:false,
+      loader:null,
+      loading:false,
+      config:{
+        alert_text:"",
+        alert_type:"info",
+        alert: false,
+      },
+    },
+    mounted:function(){
+      var _this = this;
+      document.onkeydown = function(e) {
+        let key = window.event.keyCode;
+        if (key == 13) {
+          _this.submit();
+        }
+      };
+    },
+    methods:{
+      submit : function (){
+        if(!(this.name||this.phonenumber)){
+          this.error("请输入登录信息");
+          return;
+        }
+        this.show_loading()
+        axios({
+          url:backEndUrl+"/auth/login",
+          method:"post",
+          data:{
+            name:this.name,
+            phonenumber: String(this.phonenumber)
+          },
+        }).then((res) => {
+          if (res.data.status == 0) {
+            this.success("登录成功")
+            Cookies.set('user', res.data.data, { expires: 7, path: '/' });
+            setTimeout(function (){window.location.href = "./"; },2000)
+          }else{
+            this.error(res.data.msg)
+          }
+        }).catch(err => {
+          console.log(err)
+          this.error("登录失败:"+err)
+        });
+
+        const that = this;
+        setTimeout(function () {
+          if(that.alert){
+            that.config.alert = !that.config.alert;
+          }
+        },2000)
+      },
+      success: function(text){
+        this.config.alert = !this.config.alert
+        this.config.alert_text = text
+        this.config.alert_type = "success"
+      },
+      error: function (err){
+        this.config.alert = !this.config.alert
+        this.config.alert_text = err
+        this.config.alert_type = "error"
+      },
+      show_loading: function (){
+        this.loader = 'loading'
+      },
+    },
+    watch: {
+      loader () {
+        const l = this.loader
+        this[l] = !this[l]
+        this.disable_input = !this.disable_input
+
+        setTimeout(() => (this[l] = false), 500)
+
+        this.loader = null
+      },
+    }
+  })
+</script>
+</body>
+</html>

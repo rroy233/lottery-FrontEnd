@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta charset='utf-8'>
+    <title>活动设置 | 管理员</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+    <v-app id="inspire">
+        <v-app-bar
+                app
+                color="white"
+                flat
+        >
+            <v-container class="py-0 fill-height">
+                <v-avatar
+                        class="mr-10"
+                        color="grey darken-1"
+                        size="32"
+                ></v-avatar>
+
+                <v-btn
+                        v-for="link in navi_top"
+                        :key="link.name"
+                        text
+                        :href="link.link"
+                >
+                    {{ link.name }}
+                </v-btn>
+
+                <v-spacer></v-spacer>
+            </v-container>
+        </v-app-bar>
+
+        <v-main class="grey lighten-3">
+            <v-container>
+                <v-row>
+
+                    <v-col>
+                        <v-sheet
+                                min-height="70vh"
+                                rounded="lg"
+                        >
+                            <!--正文-->
+                            <v-container>
+                                <v-alert
+                                        dense
+                                        outlined
+                                        type="info"
+                                >
+                                    当前定时器状态:
+                                    <code>{{act_info.timer.status ? "已生效" : "无"}}</code>
+                                    {{act_info.timer.status ? "(ID:"+act_info.timer.id+")" : ""}}
+                                </v-alert>
+
+                                <v-form
+                                        ref="form"
+                                        lazy-validation
+                                >
+
+
+                                    <v-text-field
+                                            v-model="act_info.act_name"
+                                            :disabled="disable_input"
+                                            label="活动名称"
+                                    ></v-text-field>
+
+                                    <v-col
+                                    >
+                                        <v-select
+                                                v-model="ot_select"
+                                                :items="ot_options"
+                                                item-text="text"
+                                                item-value="value"
+                                                label="活动开启方式"
+                                                persistent-hint
+                                                return-object
+                                        ></v-select>
+                                    </v-col>
+
+
+
+                                    <v-menu
+                                            ref="open_date_menu"
+                                            v-model="date_time.open_date_menu"
+                                            :close-on-content-click="false"
+                                            :return-value.sync="act_info.act_open_date_time.date"
+                                            transition="scale-transition"
+                                            offset-y
+                                            min-width="auto"
+                                    >
+                                        <template v-slot:activator="{ on, attrs }">
+                                            <v-text-field
+                                                    v-model="act_info.act_open_date_time.date"
+                                                    label="选择活动开始日期"
+                                                    prepend-icon="mdi-calendar"
+                                                    readonly
+                                                    v-bind="attrs"
+                                                    v-on="on"
+                                            ></v-text-field>
+                                        </template>
+                                        <v-date-picker
+                                                v-model="act_info.act_open_date_time.date"
+                                                no-title
+                                                scrollable
+                                        >
+                                            <v-spacer></v-spacer>
+                                            <v-btn
+                                                    text
+                                                    color="primary"
+                                                    @click="date_time.open_date_menu = false"
+                                            >
+                                                Cancel
+                                            </v-btn>
+                                            <v-btn
+                                                    text
+                                                    color="primary"
+                                                    @click="$refs.open_date_menu.save(act_info.act_open_date_time.date)"
+                                            >
+                                                OK
+                                            </v-btn>
+                                        </v-date-picker>
+                                    </v-menu>
+                                    <v-menu
+                                            ref="open_time_menu"
+                                            v-model="date_time.open_time_menu"
+                                            :close-on-content-click="false"
+                                            :nudge-right="40"
+                                            :return-value.sync="act_info.act_open_date_time.time"
+                                            transition="scale-transition"
+                                            offset-y
+                                            max-width="290px"
+                                            min-width="290px"
+                                    >
+                                        <template v-slot:activator="{ on, attrs }">
+                                            <v-text-field
+                                                    v-model="act_info.act_open_date_time.time"
+                                                    label="活动开始时间(24小时制)"
+                                                    prepend-icon="mdi-clock-time-four-outline"
+                                                    readonly
+                                                    v-bind="attrs"
+                                                    v-on="on"
+                                            ></v-text-field>
+                                        </template>
+                                        <v-time-picker
+                                                v-if="date_time.open_time_menu"
+                                                v-model="act_info.act_open_date_time.time"
+                                                format="24hr"
+                                                full-width
+                                                @click:minute="$refs.open_time_menu.save(act_info.act_open_date_time.time)"
+                                        ></v-time-picker>
+                                    </v-menu>
+
+
+                                    <v-menu
+                                            ref="end_date_menu"
+                                            v-model="date_time.end_date_menu"
+                                            :close-on-content-click="false"
+                                            :return-value.sync="act_info.act_end_date_time.date"
+                                            transition="scale-transition"
+                                            offset-y
+                                            min-width="auto"
+                                    >
+                                        <template v-slot:activator="{ on, attrs }">
+                                            <v-text-field
+                                                    v-model="act_info.act_end_date_time.date"
+                                                    label="选择活动结束日期"
+                                                    prepend-icon="mdi-calendar"
+                                                    readonly
+                                                    v-bind="attrs"
+                                                    v-on="on"
+                                            ></v-text-field>
+                                        </template>
+                                        <v-date-picker
+                                                v-model="act_info.act_end_date_time.date"
+                                                no-title
+                                                scrollable
+                                        >
+                                            <v-spacer></v-spacer>
+                                            <v-btn
+                                                    text
+                                                    color="primary"
+                                                    @click="date_time.end_date_menu = false"
+                                            >
+                                                Cancel
+                                            </v-btn>
+                                            <v-btn
+                                                    text
+                                                    color="primary"
+                                                    @click="$refs.end_date_menu.save(act_info.act_end_date_time.date)"
+                                            >
+                                                OK
+                                            </v-btn>
+                                        </v-date-picker>
+                                    </v-menu>
+                                    <v-menu
+                                            ref="end_time_menu"
+                                            v-model="date_time.end_time_menu"
+                                            :close-on-content-click="false"
+                                            :nudge-right="40"
+                                            :return-value.sync="act_info.act_end_date_time.time"
+                                            transition="scale-transition"
+                                            offset-y
+                                            max-width="290px"
+                                            min-width="290px"
+                                    >
+                                        <template v-slot:activator="{ on, attrs }">
+                                            <v-text-field
+                                                    v-model="act_info.act_end_date_time.time"
+                                                    label="活动结束时间(24小时制)"
+                                                    prepend-icon="mdi-clock-time-four-outline"
+                                                    readonly
+                                                    v-bind="attrs"
+                                                    v-on="on"
+                                            ></v-text-field>
+                                        </template>
+                                        <v-time-picker
+                                                v-if="date_time.end_time_menu"
+                                                v-model="act_info.act_end_date_time.time"
+                                                format="24hr"
+                                                full-width
+                                                @click:minute="$refs.end_time_menu.save(act_info.act_end_date_time.time)"
+                                        ></v-time-picker>
+                                    </v-menu>
+
+
+
+
+                                    <v-btn
+                                            block
+                                            :loading="loading"
+                                            :disabled="disable_input"
+                                            @click="submit()"
+                                            outlined
+                                            color="indigo"
+                                    >
+                                        提交
+                                        <template v-slot:loader>
+                                            <span>加载中</span>
+                                        </template>
+                                    </v-btn>
+                                </v-form>
+                            </v-container>
+
+
+                            <!--正文-->
+                        </v-sheet>
+                    </v-col>
+
+
+                </v-row>
+
+
+                <v-dialog v-model="tips.open" max-width="500px">
+                    <v-card>
+                        <v-card-title>{{tips.info}}</v-card-title>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="blue darken-1" text @click="tips.open = false" right>OK</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </v-container>
+        </v-main>
+    </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script>
+    const backEndUrl = "{{api_url}}";
+    new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data:()=>({
+            navi_top: [
+                {name:'仪表盘',link:"/admin/"},
+                {name:'中奖信息',link:"/admin/lottery"},
+                {name:'奖品管理',link:"/admin/gifts"},
+                {name:'用户管理',link:"/admin/user"},
+                {name:'设置',link:"/admin/setting"},
+            ],
+            act_info:{
+                act_id:0,
+                act_name:"loading...",
+                act_open_type:0,
+                act_open_date_time: {
+                    date:"",
+                    time:""
+                },
+                act_end_date_time:{
+                    date:"",
+                    time:""
+                },
+                timer:{
+                    status:0,
+                    id:""
+                }
+            },
+            name:"",
+            disable_input:false,
+            loader:null,
+            loading:false,
+            tips: {
+                open:false,
+                info:"",
+            },
+            auth:"",
+            date_time:{
+                open_date_menu: false,
+                open_time_menu:false,
+                end_date_menu: false,
+                end_time_menu:false
+            },
+            ot_options:[
+                { text: '手动开启', value: 1 },
+                { text: '定时开启', value: 2 },
+            ],
+            ot_select: { text: '手动开启', value: 1 },
+        }),
+        mounted:function (){
+            auth = Cookies.get('user');
+
+            this.initdata()
+        },
+        methods:{
+            initdata: function (){
+                var that=this;
+                auth = Cookies.get('user');
+
+                //获取活动信息
+                axios.get(backEndUrl+'/admin/act/get',{
+                    timeout: 5000,
+                    headers:{'Authorization':auth,},
+                }).then((res) => {
+                    if (res.data.status == 0) {
+                        that.act_info = JSON.parse(res.data.data)
+                        this.ot_select = this.ot_options[that.act_info.act_open_type-1]
+                    }else{
+                        that.showtips(res.data.msg)
+                    }
+                }).catch(err => {
+                    this.showtips("服务器连接失败("+err+")");
+                });
+            },
+            submit:function (){
+                var that = this
+                this.act_info.act_open_type = this.ot_select.value
+                axios({
+                    url:backEndUrl+"/admin/act/edit",
+                    method:"post",
+                    headers:{
+                        'Authorization':auth,
+                    },
+                    data:{
+                        act_info:JSON.stringify(this.act_info)
+                    }
+                }).then((res) => {
+                    if (res.data.status == 0) {
+                        that.showtips(res.data.msg)
+                        this.initdata()
+                    }else{
+                        that.showtips(res.data.msg)
+                    }
+                }).catch(err => {
+                    that.showtips( "系统异常:"+err)
+                });
+            },
+            showtips: function (text){
+                this.tips.info = text
+                this.tips.open = true
+            },
+        }
+    })
+</script>
+</body>
+</html>

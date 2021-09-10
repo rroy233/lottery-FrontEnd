@@ -1,0 +1,376 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0,maximum-scale=1.0, user-scalable=no'/>
+  <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'/>
+  <meta name='renderer' content='webkit'>
+  <meta name='format-detection' content='telephone=no'>
+  <meta http-equiv='Cache-Control' content='no-siteapp'/>
+  <link href="/static/favicon.ico" type="image/x-icon" rel="shortcut icon">
+  <title>抽奖活动</title>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+  <v-app id="inspire">
+    <v-app-bar app>
+      <v-toolbar-title>抽奖活动</v-toolbar-title>
+      <v-snackbar
+              timeout=1000
+              max-height="48px"
+              v-model="config.alert"
+              :color="config.alert_type"
+              transition="slide-x-reverse-transition"
+              absolute
+              top
+              outlined
+              right
+      >
+        {{ config.alert_text }}
+      </v-snackbar>
+    </v-app-bar>
+
+    <v-main>
+      <!--  -->
+
+      <v-container
+          v-show="navi_bar == 0"
+      >
+      <!--首页-->
+        <v-alert
+                type="info"
+        >
+          活动名称：
+          {{ act_info.act_name }}
+          <br>
+          活动开始时间：
+          <code>{{act_info.act_open_time}}</code>
+          <br>
+          活动结束时间：
+          <code>{{act_info.act_end_time}}</code>
+          <br>
+          当前活动状态：
+          {{ (act_info.act_status == "1") ? "已开始":"未开始"}}
+          <br>
+
+        </v-alert>
+        <v-layout row wrap  align-center justify-center fill-height>
+          <v-btn
+                  class="mx-auto mt-12"
+                  :disabled="!enable"
+                  outlined
+                  indeterminate
+                  large
+                  fab
+                  color="indigo"
+                  center
+                  @click="lottery()"
+          >
+            <v-icon v-if="actClock != null">{{actClockTime}}</v-icon>
+            <v-icon v-else>mdi-{{ (act_info.act_status == "1") ? "gift-outline":"alarm"}}</v-icon>
+          </v-btn>
+
+        </v-layout>
+
+
+      </v-container>
+
+      <v-container
+              v-show="navi_bar == 1"
+      >
+        <!--奖品列表-->
+        <v-list three-line>
+          <template v-for="(item, index) in act_info.act_gift">
+            <v-list-item
+                    :key="index"
+            >
+              <v-list-item-avatar>
+                <v-icon>{{item.Id}}</v-icon>
+              </v-list-item-avatar>
+
+              <v-list-item-content>
+                <v-list-item-title v-html="item.Name"></v-list-item-title>
+                <v-list-item-subtitle >总数：{{item.Total}}</v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
+          </template>
+        </v-list>
+      </v-container>
+
+      <v-container
+              v-show="navi_bar == 2"
+      >
+        <!--抽奖记录-->
+        <v-alert
+                icon="mdi-shield-lock-outline"
+                type="info"
+                v-if="act_info.act_status"
+                prominent
+                text
+        >
+          <v-row align="center">
+            <v-col class="grow">
+              当前活动正在进行，仅支持查询此次的获奖信息
+              <br>
+              所有记录的查询待活动结束后开放
+            </v-col>
+            <v-col class="shrink"
+                   >
+              <v-btn
+                      outlined
+                      color="indigo"
+                      @click="refresh_list()"
+              >刷新</v-btn>
+            </v-col>
+          </v-row>
+        </v-alert>
+        <v-list three-line>
+          <template v-for="(item, index) in myGifts">
+
+            <v-divider
+                    v-if="item.divider"
+                    :key="index"
+                    :inset="item.inset"
+            ></v-divider>
+
+            <v-list-item
+                    v-else
+                    :key="index"
+            >
+              <v-list-item-avatar>
+                <v-icon>mdi-gift-open</v-icon>
+              </v-list-item-avatar>
+
+              <v-list-item-content>
+                <v-list-item-title v-html="item.name"></v-list-item-title>
+                <v-list-item-subtitle >中奖时间：{{item.got_time}}</v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
+          </template>
+        </v-list>
+      </v-container>
+
+    </v-main>
+    <v-bottom-navigation
+            v-model="navi_bar"
+            :background-color="color"
+            bottom
+            grow
+            dark
+            shift
+            app
+    >
+      <v-btn>
+        <span>首页</span>
+        <v-icon>mdi-home</v-icon>
+      </v-btn>
+
+      <v-btn>
+        <span>奖品</span>
+        <v-icon>mdi-gift</v-icon>
+      </v-btn>
+
+      <v-btn>
+        <span>抽奖记录</span>
+        <v-icon>mdi-account</v-icon>
+      </v-btn>
+    </v-bottom-navigation>
+
+  </v-app>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script src="config.js"></script>
+<script>
+
+  const backEndUrl = "{{api_url}}";
+  new Vue({
+    el: '#app',
+    vuetify: new Vuetify(),
+    data:{
+      navi_bar:0,
+      auth:"",
+      config:{
+        alert_text:"",
+        alert_type:"info",
+        alert: false,
+      },
+      act_info:{
+        act_status:0,
+        act_name:"loading...",
+        act_gift:[],
+        act_open_type:0,
+        act_open_time:"",
+        act_end_time:"",
+      },
+      timer:null,
+      ts:0,
+      enable:0,
+      myGifts: [{
+        id:0,
+        name:"",
+        got_time:"",
+      }],
+      actClock:null,
+      actClockTime:0,
+      actTimer:null,
+    },
+    mounted:function(){
+      let that=this;
+      auth = Cookies.get('user');
+
+      this.initData()
+      this.refresh_list()
+      this.heartbeat()
+      this.timer = setInterval(function(){
+        that.heartbeat()
+      }, 3000);
+      this.actTimer = setInterval(function(){
+        that.initData()
+      }, 30000);
+    },
+    methods:{
+      setActTimer(){
+        let that=this;
+        if (this.act_info.act_open_type === 2){
+          let date = this.act_info.act_open_time
+          let openTime = Math.round((Date.parse(date.replace(' ','T')))/1000)
+          let now = Math.round((Date.now())/1000)
+          if (openTime > now && (openTime - now)<100){
+            this.actClockTime =openTime - now
+            if (this.actClock === null){
+              this.actClock = setInterval(function(){
+                that.actClockTime--
+                if (that.actClockTime<=0){
+                  that.actClock = null
+                  that.actClockTime = 0
+                  that.heartbeat()
+                }
+              }, 1000);
+            }
+          }
+        }
+      },
+      initData(){
+        let that=this;
+        //获取活动信息
+        axios.get(backEndUrl+'/user/act_info',{
+          timeout: 5000,
+          headers:{'Authorization':auth,},
+        }).then((res) => {
+          if (res.data.status == 0) {
+            that.act_info = JSON.parse(res.data.data)
+            that.act_info.act_gift = JSON.parse(that.act_info.act_gift)
+            that.setActTimer()
+          }else{
+            that.showError(res.data.msg)
+          }
+        }).catch(err => {
+          this.showError("服务器连接失败("+err+")");
+        });
+      },
+      heartbeat:function (){
+        axios({
+          url:backEndUrl+"/user/heartbeat",
+          method:"post",
+          headers:{
+            'Authorization':auth,
+          },
+        }).then((res) => {
+          let data = JSON.parse(res.data.data)
+          if (res.data.status == 0) {
+            if (this.act_info.act_status !== data.act_status) {
+              this.refresh_list()
+            }
+            this.act_info.act_status = data.act_status
+            this.ts = data.ts
+            this.enable = data.enable
+          }else{
+            this.showError(res.data.msg)
+            window.location.href = "/login";
+          }
+        }).catch(err => {
+          clearInterval(this.timer)
+          this.showError("服务器连接失败:"+err);
+        });
+      },
+      lottery: function (){
+        this.enable = 0
+        axios({
+          url:backEndUrl+"/user/lottery",
+          method:"post",
+          headers:{
+            'Authorization':auth,
+          },
+          data: {
+            ts: String(Date.parse(new Date())),
+          },
+        }).then((res) => {
+          let data = JSON.parse(res.data.data)
+          if (res.data.status == 0) {
+            this.success(data.info)
+          }else{
+            this.showError(res.data.msg)
+          }
+          this.enable = 1
+        }).catch(err => {
+          this.showError(err);
+        });
+      },
+      refresh_list: function (){
+        //获取中奖信息
+        axios.get(backEndUrl+'/user/my',{
+          timeout: 5000,
+          headers:{'Authorization':auth,},
+        }).then((res) => {
+          if (res.data.status == 0) {
+            let data = JSON.parse(res.data.data)
+            this.myGifts = data
+            this.success("抽奖记录刷新成功")
+          }else{
+            this.showError(res.data.msg)
+          }
+        }).catch(err => {
+          this.showError("中奖信息查询失败("+err+")");
+        });
+      },
+      success: function(text){
+        this.config.alert = !this.config.alert
+        this.config.alert_text = text
+        this.config.alert_type = "success"
+      },
+      showError: function (err){
+        this.config.alert = !this.config.alert
+        this.config.alert_text = err
+        this.config.alert_type = "error"
+      },
+    },
+    watch: {
+
+    },
+    computed: {
+      color() {
+        switch (this.navi_bar) {
+          case 0:
+            return 'blue-grey'
+          case 1:
+            return 'teal'
+          case 2:
+            return 'brown'
+          case 3:
+            return 'indigo'
+          default:
+            return 'blue-grey'
+        }
+      },
+    },
+  })
+</script>
+</body>
+</html>

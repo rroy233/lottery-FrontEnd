@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta charset='utf-8'>
+    <title>编辑用户 | 管理员</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+<div id="app">
+    <v-app id="inspire">
+        <v-app-bar
+                app
+                color="white"
+                flat
+        >
+            <v-container class="py-0 fill-height">
+                <v-avatar
+                        class="mr-10"
+                        color="grey darken-1"
+                        size="32"
+                ></v-avatar>
+
+                <v-btn
+                        v-for="link in navi_top"
+                        :key="link.name"
+                        text
+                        :href="link.link"
+                >
+                    {{ link.name }}
+                </v-btn>
+
+                <v-spacer></v-spacer>
+
+            </v-container>
+        </v-app-bar>
+
+        <v-main class="grey lighten-3">
+            <v-container>
+                <v-row>
+                    <v-col>
+                        <v-sheet
+                                min-height="70vh"
+                                rounded="lg"
+                        >
+                            <!--正文-->
+                            <v-container>
+
+                                <v-card>
+                                    <v-card-title>
+                                        <v-text-field
+                                                v-model="search"
+                                                append-icon="mdi-magnify"
+                                                label="Search"
+                                                single-line
+                                                hide-details
+                                        ></v-text-field>
+                                    </v-card-title>
+
+                                    <v-data-table
+                                            :headers="tbHeaders"
+                                            :items="users"
+                                            sort-by="calories"
+                                            class="elevation-1"
+                                            :search="search"
+                                    >
+
+                                        <template v-slot:top>
+
+                                            <v-toolbar
+                                                    flat
+                                            >
+                                                <v-toolbar-title>所有用户</v-toolbar-title>
+                                                <v-divider
+                                                        class="mx-4"
+                                                        inset
+                                                        vertical
+                                                ></v-divider>
+                                                <v-spacer></v-spacer>
+
+                                                <v-dialog
+                                                        v-model="dialog"
+                                                        max-width="500px"
+                                                >
+                                                    <template v-slot:activator="{ on, attrs }">
+                                                        <v-btn
+                                                                color="primary"
+                                                                dark
+                                                                class="mb-2"
+                                                                v-bind="attrs"
+                                                                v-on="on"
+                                                        >
+                                                            新增用户
+                                                        </v-btn>
+                                                    </template>
+                                                    <v-card>
+                                                        <v-card-title>
+                                                            <span class="text-h5">{{ formTitle }}</span>
+                                                        </v-card-title>
+
+                                                        <v-card-text>
+                                                            <v-container>
+                                                                <v-row>
+
+                                                                    <v-col
+                                                                            cols="12"
+                                                                            sm="6"
+                                                                            md="4"
+                                                                    >
+                                                                        <v-text-field
+                                                                                v-model="editedItem.name"
+                                                                                label="姓名"
+                                                                        ></v-text-field>
+                                                                    </v-col>
+
+                                                                    <v-col
+                                                                            cols="12"
+                                                                            sm="6"
+                                                                            md="4"
+                                                                    >
+                                                                        <v-text-field
+                                                                                v-model="editedItem.phone_number"
+                                                                                label="电话号码"
+                                                                        ></v-text-field>
+                                                                    </v-col>
+
+                                                                    <v-col
+                                                                            cols="12"
+                                                                            sm="6"
+                                                                            md="4"
+                                                                    >
+                                                                        <v-select
+                                                                                v-model="gifts_select"
+                                                                                :items="gifts_options"
+                                                                                item-text="name"
+                                                                                item-value="id"
+                                                                                label="奖品保障"
+                                                                                persistent-hint
+                                                                                return-object
+                                                                        ></v-select>
+                                                                    </v-col>
+
+
+                                                                </v-row>
+                                                            </v-container>
+                                                        </v-card-text>
+
+                                                        <v-card-actions>
+                                                            <v-spacer></v-spacer>
+                                                            <v-btn
+                                                                    color="blue darken-1"
+                                                                    text
+                                                                    @click="close"
+                                                            >
+                                                                取消
+                                                            </v-btn>
+                                                            <v-btn
+                                                                    color="blue darken-1"
+                                                                    text
+                                                                    @click="save"
+                                                            >
+                                                                保存
+                                                            </v-btn>
+                                                        </v-card-actions>
+
+
+                                                    </v-card>
+                                                </v-dialog>
+
+
+                                                <v-dialog v-model="dialogDelete" max-width="500px">
+                                                    <v-card>
+                                                        <v-card-title class="text-h5">确定要删除该用户?</v-card-title>
+                                                        <v-card-actions>
+                                                            <v-spacer></v-spacer>
+                                                            <v-btn color="blue darken-1" text @click="closeDelete">取消</v-btn>
+                                                            <v-btn color="blue darken-1" text @click="deleteItemConfirm">OK</v-btn>
+                                                        </v-card-actions>
+                                                    </v-card>
+                                                </v-dialog>
+
+                                                <v-dialog v-model="tips.open" max-width="500px">
+                                                    <v-card>
+                                                        <v-card-title>{{tips.info}}</v-card-title>
+                                                        <v-card-actions>
+                                                            <v-spacer></v-spacer>
+                                                            <v-btn color="blue darken-1" text @click="tips.open = false" right>OK</v-btn>
+                                                        </v-card-actions>
+                                                    </v-card>
+                                                </v-dialog>
+
+
+                                            </v-toolbar>
+                                        </template>
+
+
+
+                                        <template v-slot:item.actions="{ item }">
+                                            <v-icon
+                                                    small
+                                                    class="mr-2"
+                                                    @click="editItem(item)"
+                                            >
+                                                mdi-pencil
+                                            </v-icon>
+                                            <v-icon
+                                                    small
+                                                    @click="deleteItem(item)"
+                                            >
+                                                mdi-delete
+                                            </v-icon>
+                                        </template>
+
+                                    </v-data-table>
+
+                                </v-card>
+
+
+                            </v-container>
+
+
+                            <!--正文-->
+                        </v-sheet>
+                    </v-col>
+
+                    <v-col cols="2">
+                        <v-sheet rounded="lg">
+                            <v-list color="transparent">
+                                <v-list-item
+
+                                >
+                                    <v-list-item-content>
+                                        <v-list-item-title>
+                                            用户数量:
+                                            <code>{{count}}</code>
+                                        </v-list-item-title>
+                                    </v-list-item-content>
+                                </v-list-item>
+
+                                <v-divider class="my-2"></v-divider>
+
+                                <v-list-item
+                                        link
+                                        color="grey lighten-4"
+                                >
+                                    <v-list-item-content @click="bulk_upload.dialog=true">
+                                        <v-list-item-title>
+                                            <v-icon>
+                                                mdi-account
+                                            </v-icon>&nbsp;批量导入
+                                        </v-list-item-title>
+                                    </v-list-item-content>
+                                </v-list-item>
+
+                                <v-list-item
+                                        link
+                                        color="grey lighten-4"
+                                >
+                                    <v-list-item-content @click="dialogBulkDelete = true">
+                                        <v-list-item-title>
+                                            <v-icon>
+                                                mdi-account
+                                            </v-icon>&nbsp;删除所有用户
+                                        </v-list-item-title>
+                                    </v-list-item-content>
+                                </v-list-item>
+
+
+                            </v-list>
+                        </v-sheet>
+                    </v-col>
+
+                </v-row>
+            </v-container>
+
+            <v-dialog v-model="bulk_upload.dialog" max-width="500px">
+                <v-card>
+                    <v-card-title class="text-h5">批量导入用户</v-card-title>
+                    <v-card-title>1.下载表格模板</v-card-title>
+                    <v-card-text>
+                        <v-btn class="ma-2" href="/user.xlsx" target="_blank">下载</v-btn>
+                    </v-card-text>
+                    <v-card-text>请勿修改工作表名称或删除表头。若姓名重复将导致导入失败。</v-card-text>
+                    <v-card-title>2.上传文件</v-card-title>
+                    <v-card-text>
+                        <v-file-input
+                                v-model="bulk_upload.file"
+                                :rules="bulk_upload.rules"
+                                accept=".xlsx"
+                                placeholder="选择本地的表格文件"
+                                prepend-icon="mdi-file"
+                                label="上传"
+                        ></v-file-input>
+                    </v-card-text>
+                    <v-card-text>最大支持:100KB，即一次最多支持导入约5000条信息。</v-card-text>
+
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="bulk_upload.dialog=false" :disabled="this.bulk_upload.loading" right>关闭</v-btn>
+                        <v-btn color="blue darken-1" text @click="bulk_upload_user" :loading="bulk_upload.loading" right>OK</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
+            <v-dialog v-model="dialogBulkDelete" max-width="500px">
+                <v-card>
+                    <v-card-title>确定要删除所有用户?</v-card-title>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="dialogBulkDelete = false">手滑了</v-btn>
+                        <v-btn color="blue darken-1" text @click="del_all()">是的</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
+
+        </v-main>
+    </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+<script>
+
+    const backEndUrl = "{{api_url}}";
+    new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data:()=>({
+            navi_top: [
+                {name:'仪表盘',link:"/admin/"},
+                {name:'中奖信息',link:"/admin/lottery"},
+                {name:'奖品管理',link:"/admin/gifts"},
+                {name:'用户管理',link:"/admin/user"},
+                {name:'设置',link:"/admin/setting"},
+            ],
+            search: '',
+            tbHeaders: [
+                { text: '姓名', value: 'name' },
+                {text: '用户ID',value: 'id',},
+                { text: '电话号码', value: 'phone_number' ,sortable: false},
+                { text: '奖品保证ID', value: 'promise' },
+                { text: '操作', value: 'actions', sortable: false },
+            ],
+            count:0,
+            users:[],
+            editedItem:{name:"",phone_number:"",gift_promise:-1},
+            defaultItem:{name:"",phone_number:"",gift_promise:-1},
+            gifts_options:[
+            ],
+            gifts_select: {name:"",id:0},
+            gift_name_list:{},
+            editedIndex: -1,
+            dialog: false,
+            dialogDelete: false,
+            dialogBulkDelete:false,
+            tips: {
+                open:false,
+                info:"",
+            },
+            bulk_upload:{
+              dialog:false,
+                loading:false,
+                rules: [
+                    value => !value || value.size < 5000000 || '文件大小应该小于5MB',
+                ],
+                file:null,
+            },
+            upload_dialog:false,
+        }),
+        mounted:function (){
+            //获取奖品列表
+            axios.get(backEndUrl+'/admin/gifts/namelist',{
+                timeout: 5000,
+            }).then((res) => {
+                if (res.data.status == 0) {
+                    this.gifts_options = JSON.parse(JSON.parse(res.data.data).options)
+                    this.gifts_select = this.gifts_options[-1]
+                    this.gift_name_list = JSON.parse(JSON.parse(res.data.data).name_list)
+                }else{
+                    this.showtips(res.data.msg)
+                }
+            }).catch(err => {
+                this.showtips("服务器连接失败("+err+")");
+            });
+
+            this.initdata()
+        },
+        computed: {
+            cols () {
+                const { lg, sm } = this.$vuetify.breakpoint
+                return lg ? [3, 9] : sm ? [9, 3] : [6, 6]
+            },
+            formTitle () {
+                return this.editedIndex === -1 ? '新增用户' : '编辑用户'
+            },
+        },
+        watch: {
+            dialog (val) {
+                val || this.close()
+            },
+            dialogDelete (val) {
+                val || this.closeDelete()
+            },
+        },
+        methods:{
+
+            initdata: function (){
+                var that=this;
+                //获取所有用户信息
+                axios.get(backEndUrl+'/admin/user/all',{
+                    timeout: 5000,
+                }).then((res) => {
+                    var data = JSON.parse(res.data.data)
+                    if (res.data.status == 0) {
+                        that.users = JSON.parse(data.users)
+                        that.count = data.count
+                    }else{
+                        that.showtips(res.data.msg)
+                    }
+                }).catch(err => {
+                    this.showtips("获取所有用户信息失败("+err+")");
+                });
+            },
+            del_all: function (){
+                axios({
+                    url:backEndUrl+"/admin/user/bulk_del",
+                    method:"post",
+                }).then((res) => {
+                    if (res.data.status == 0) {
+                        this.tips.info = res.data.msg
+                        this.tips.open = true
+                        this.dialogBulkDelete = false
+                        this.initdata()
+                    }else{
+                        this.tips.info = "删除失败:"+res.data.msg
+                        this.tips.open = true
+                    }
+                }).catch(err => {
+                    this.tips.info = "系统异常:"+res.data.msg
+                    this.tips.open = true
+                });
+            },
+            editItem (item) {
+                this.editedIndex = this.users.indexOf(item)
+                this.editedItem = Object.assign({}, item)
+
+                //获取该用户的信息
+
+                var this_user = this.users[this.editedIndex]
+                axios.get(backEndUrl+'/admin/user/get',{
+                    timeout: 5000,
+                    params: {
+                        id: String(this_user.id)
+                    }
+                }).then((res) => {
+                    if (res.data.status == 0) {
+                        if (this.editedItem.promise === "-1") {
+                            this.gifts_select = this.gifts_options[0]
+                        }else{
+                            this.gifts_select = this.gifts_options[this.gift_name_list[parseInt(this.editedItem.promise)]]
+                        }
+                    }else{
+                        that.showtips(res.data.msg)
+                    }
+                }).catch(err => {
+                    this.showtips("服务器连接失败("+err+")");
+                });
+
+                this.dialog = true
+            },
+
+            deleteItem (item) {
+                this.editedIndex = this.users.indexOf(item)
+                this.editedItem = Object.assign({}, item)
+                this.dialogDelete = true
+            },
+
+            deleteItemConfirm () {
+                var this_user = this.users[this.editedIndex]
+
+                axios({
+                    url:backEndUrl+"/admin/user/del",
+                    method:"post",
+                    data:{
+                        id:String(this_user.id)
+                    }
+                }).then((res) => {
+                    if (res.data.status == 0) {
+                        this.showtips("删除成功")
+                        this.initdata()
+                    }else{
+                        this.showtips( res.data.msg)
+                    }
+                }).catch(err => {
+                    this.showtips("系统异常:"+res.data.msg)
+                });
+                this.closeDelete()
+            },
+
+            close () {
+                this.dialog = false
+                this.$nextTick(() => {
+                    this.editedItem = Object.assign({}, this.defaultItem)
+                    this.editedIndex = -1
+                })
+            },
+
+            closeDelete () {
+                this.dialogDelete = false
+                this.$nextTick(() => {
+                    this.editedItem = Object.assign({}, this.defaultItem)
+                    this.editedIndex = -1
+                })
+            },
+
+            save () {
+                var this_user = this.users[this.editedIndex]
+                console.log(this_user)
+                if (this.editedIndex > -1) {
+                    //编辑
+                    axios({
+                        url:backEndUrl+"/admin/user/edit",
+                        method:"post",
+                        data:{
+                            id:String(this_user.id),
+                            name:this.editedItem.name,
+                            phone_number:String(this.editedItem.phone_number),
+                            gift_promise:String(this.gifts_select.id),
+                        }
+                    }).then((res) => {
+                        if (res.data.status == 0) {
+                            this.showtips("更新成功")
+                            this.initdata()
+                        }else{
+                            this.showtips("更新失败:"+res.data.msg)
+                        }
+                    }).catch(err => {
+                        this.showtips("系统异常:"+res.data.msg)
+                    });
+                }else{
+                    //新增
+                    axios({
+                        url:backEndUrl+"/admin/user/add",
+                        method:"post",
+                        data:{
+                            name:this.editedItem.name,
+                            phone_number:String(this.editedItem.phone_number),
+                            gift_promise:String(this.gifts_select.id),
+                        }
+                    }).then((res) => {
+                        if (res.data.status == 0) {
+                            this.showtips("添加成功")
+                            this.initdata()
+                        }else{
+                            this.showtips("添加失败:"+res.data.msg)
+                        }
+                    }).catch(err => {
+                        this.tips.info = "系统异常:"+res.data.msg
+                        this.tips.open = true
+                    });
+                }
+
+
+                this.close();
+            },
+            bulk_upload_user(){
+                var _this = this
+                this.bulk_upload.loading = true
+                console.log(this.bulk_upload.file)
+                let param = new FormData(); //创建form对象
+                param.append('file',this.bulk_upload.file);//通过append向form对象添加数据
+                console.log(param.get('file')); //FormData私有类对象，访问不到，可以通过get判断值是否传进去
+                console.log(param)
+                axios({
+                    url:backEndUrl+"/admin/user/bulk_add",
+                    method:"post",
+                    headers:{
+                        'Content-type':"multipart/form-data;charset:utf-8",
+                    },
+                    data:param,
+                }).then((res) => {
+                    if (res.data.status == 0) {
+                        this.tips.info = res.data.msg
+                        this.tips.open = true
+                        this.initdata()
+                        this.bulk_upload.file = null
+                    }else{
+                        this.tips.info = "上传失败:"+res.data.msg
+                        this.tips.open = true
+                    }
+                    this.bulk_upload.dialog = false
+                    this.bulk_upload.loading = false
+                }).catch(err => {
+                    this.tips.info = "系统异常:"+res.data.msg
+                    this.tips.open = true
+                });
+            },
+            showtips: function (text){
+                this.tips.info = text
+                this.tips.open = true
+            },
+        }
+    })
+</script>
+</body>
+</html>

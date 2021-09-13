@@ -154,6 +154,19 @@
         </v-list>
       </v-container>
 
+      <v-dialog v-model="infoDialog.open" max-width="500px">
+        <v-card>
+          <v-card-title>{{infoDialog.tittle}}</v-card-title>
+          <v-card-text>
+              {{infoDialog.text}}
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="infoDialog.open=!infoDialog.open">OK</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
     </v-main>
     <v-bottom-navigation
             v-model="navi_bar"
@@ -200,6 +213,11 @@
         alert_text:"",
         alert_type:"info",
         alert: false,
+      },
+      infoDialog:{
+        open:false,
+        tittle:"",
+        text:"",
       },
       act_info:{
         act_status:0,
@@ -314,9 +332,15 @@
         }).then((res) => {
           let data = JSON.parse(res.data.data)
           if (res.data.status == 0) {
-            this.success(data.info)
+            //this.success(data.info)
+            this.infoDialog.open = true
+            this.infoDialog.tittle = "提示"
+            this.infoDialog.text = data.info
           }else{
-            this.showError(res.data.msg)
+            //this.showError(res.data.msg)
+            this.infoDialog.open = true
+            this.infoDialog.tittle = "失败"
+            this.infoDialog.text = res.data.msg
           }
           this.enable = 1
         }).catch(err => {

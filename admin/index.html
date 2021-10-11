@@ -509,7 +509,7 @@
           if(res.data.status == 0){
             this.showtips("登出成功")
             setInterval(function () {
-              window.location.href = "/admin/";
+              window.location.href = "https://account.roy233.com/logout";
             },1000)
           }else{
             this.showtips(res.data.msg)
